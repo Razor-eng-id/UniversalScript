@@ -9,6 +9,7 @@ const axios = require("axios")
 const fs = require("fs")
 const path = require("path")
 const { exec } = require("child_process")
+const qrcode = require("qrcode-terminal")
 
 // ===================================
 //         KONFIGURASI BOT
@@ -996,12 +997,16 @@ async function startBot() {
 
     const sock = makeWASocket({
         auth: state,
-        printQRInTerminal: true,
+        printQRInTerminal: false,
     })
 
     sock.ev.on("creds.update", saveCreds)
 
-    sock.ev.on("connection.update", ({ connection, lastDisconnect }) => {
+    sock.ev.on("connection.update", ({ connection, lastDisconnect, qr }) => {
+        if (qr) {
+            console.log("\n🌸 Scan QR Code ini pakai WhatsApp kamu:\n")
+            qrcode.generate(qr, { small: true })
+        }
         if (connection === "close") {
             const alasan = new Boom(lastDisconnect?.error)?.output?.statusCode
             if (alasan !== DisconnectReason.loggedOut) {
