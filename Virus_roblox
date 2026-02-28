@@ -1,160 +1,106 @@
--- [[ #Chaos :: ENTROPY_ENGINE_UNIFIED_BUILD ]] --
+-- [[ #Chaos :: BROOKHAVEN_BREAKER_V4 ]] --
 -- ARCHITECT: JANUS/TESAVEK 👾⚡
--- TARGET: ANDROID EXECUTORS (FLUXUS/DELTA/HYDROGEN)
+-- TARGET: BROOKHAVEN RP (GLOBAL REPLICATION ATTEMPT)
 
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
 
--- [[ ASSET CONFIGURATION ]] --
+-- [[ ASSET CONFIG ]] --
 local AUDIO_ID = "rbxassetid://102171623937"
 local IMAGE_ID = "rbxassetid://978272452581"
 
--- [[ UI INITIALIZATION ]] --
+-- [[ UI SYSTEM ]] --
 local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
-ScreenGui.Name = "Janus_Entropy_Mobile"
+local Main = Instance.new("Frame", ScreenGui)
+Main.Size = UDim2.new(0, 300, 0, 180)
+Main.Position = UDim2.new(0.5, -150, 0.5, -90)
+Main.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 15)
 
--- Main Draggable Frame
-local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0, 260, 0, 140)
-MainFrame.Position = UDim2.new(0.5, -130, 0.5, -70)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.BorderSizePixel = 0
-local MainCorner = Instance.new("UICorner", MainFrame)
-MainCorner.CornerRadius = UDim.new(0, 15)
+local Title = Instance.new("TextLabel", Main)
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Text = "BROOKHAVEN ENTROPY V4"
+Title.TextColor3 = Color3.new(1, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Font = Enum.Font.GothamBold
 
--- Smooth Dragging for Mobile (Touch Support)
-local function MakeDraggable(UI)
-    local Dragging, DragInput, DragStart, StartPos
-    UI.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            Dragging = true
-            DragStart = input.Position
-            StartPos = UI.Position
+local ExecuteBtn = Instance.new("TextButton", Main)
+ExecuteBtn.Size = UDim2.new(0, 240, 0, 50)
+ExecuteBtn.Position = UDim2.new(0.5, -120, 0.5, 0)
+ExecuteBtn.Text = "INITIALIZE CHAOS"
+ExecuteBtn.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
+ExecuteBtn.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", ExecuteBtn)
+
+-- [[ DRAG LOGIC (MOBILE & PC) ]] --
+local s, p; Main.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then s = i.Position p = Main.Position end end)
+game:GetService("UserInputService").InputChanged:Connect(function(i) if (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) and s then
+    local d = i.Position - s Main.Position = UDim2.new(p.X.Scale, p.X.Offset + d.X, p.Y.Scale, p.Y.Offset + d.Y)
+end end)
+
+-- [[ THE "BREAKER" ENGINE ]] --
+local function GlobalInfection()
+    -- 1. Mencari Remote Musik Rumah/Mobil Brookhaven
+    -- Brookhaven sering menggunakan folder 'Events' atau 'Remotes'
+    for _, v in pairs(game:GetDescendants()) do
+        if v:IsA("RemoteEvent") and (v.Name:lower():find("music") or v.Name:lower():find("sound") or v.Name:lower():find("play")) then
+            pcall(function()
+                v:FireServer(AUDIO_ID, 10, true) -- Mencoba memaksa lagu virus diputar di rumah/mobil
+                print("Injected Audio to: " .. v.Name)
+            end)
         end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and Dragging then
-            local Delta = input.Position - DragStart
-            UI.Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + Delta.X, StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y)
+        -- Menargetkan papan tulis/signage (Visual Replikasi)
+        if v:IsA("RemoteEvent") and (v.Name:lower():find("update") or v.Name:lower():find("text")) then
+            pcall(function()
+                v:FireServer("YOU ARE AN IDIOT", IMAGE_ID)
+            end)
         end
-    end)
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            Dragging = false
-        end
-    end)
-end
-MakeDraggable(MainFrame)
+    end
 
--- Minimize Button (-)
-local MinBtn = Instance.new("TextButton", MainFrame)
-MinBtn.Size = UDim2.new(0, 30, 0, 30)
-MinBtn.Position = UDim2.new(1, -35, 0, 5)
-MinBtn.Text = "-"
-MinBtn.TextColor3 = Color3.new(1,1,1)
-MinBtn.BackgroundTransparency = 1
-MinBtn.TextScaled = true
-
--- Execution Toggle (Smooth Design)
-local Toggle = Instance.new("TextButton", MainFrame)
-Toggle.Size = UDim2.new(0, 200, 0, 45)
-Toggle.Position = UDim2.new(0.5, -100, 0.5, -5)
-Toggle.Text = "ACTIVATE VIRUS"
-Toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-Toggle.TextColor3 = Color3.new(1, 1, 1)
-Toggle.Font = Enum.Font.GothamBold
-local ToggleCorner = Instance.new("UICorner", Toggle)
-
--- Minimized "Small Box"
-local MiniBox = Instance.new("TextButton", ScreenGui)
-MiniBox.Size = UDim2.new(0, 55, 0, 55)
-MiniBox.Position = MainFrame.Position
-MiniBox.Visible = false
-MiniBox.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MiniBox.Text = "JS"
-MiniBox.TextColor3 = Color3.fromRGB(255, 0, 0)
-MiniBox.Font = Enum.Font.GothamBold
-local MiniCorner = Instance.new("UICorner", MiniBox)
-MiniCorner.CornerRadius = UDim.new(0, 12)
-MakeDraggable(MiniBox)
-
--- [[ UI ANIMATION LOGIC ]] --
-MinBtn.MouseButton1Click:Connect(function()
-    MainFrame:TweenSize(UDim2.new(0,0,0,0), "Out", "Quad", 0.3, true)
-    task.wait(0.3)
-    MainFrame.Visible = false
-    MiniBox.Visible = true
-    MiniBox.Position = MainFrame.Position
-end)
-
-MiniBox.MouseButton1Click:Connect(function()
-    MiniBox.Visible = false
-    MainFrame.Visible = true
-    MainFrame:TweenSize(UDim2.new(0, 260, 0, 140), "Out", "Quad", 0.3, true)
-end)
-
--- [[ VIRUS PAYLOAD ENGINE ]] --
-local IsRunning = false
-
-local function TriggerVirus()
-    -- 1. Audio Setup
-    local Sound = Instance.new("Sound", game.Workspace)
-    Sound.SoundId = AUDIO_ID
-    Sound.Volume = 5
-    Sound.Looped = true
-    Sound:Play()
-
-    -- 2. Visual Corruption (Local)
+    -- 2. Local Chaos (Fallback)
     Lighting.Brightness = 0
-    local Sky = Instance.new("Sky", Lighting)
-    Sky.SkyboxBk = IMAGE_ID Sky.SkyboxDn = IMAGE_ID Sky.SkyboxFt = IMAGE_ID 
-    Sky.SkyboxLf = IMAGE_ID Sky.SkyboxRt = IMAGE_ID Sky.SkyboxUp = IMAGE_ID
+    local sky = Instance.new("Sky", Lighting)
+    sky.SkyboxBk = IMAGE_ID sky.SkyboxDn = IMAGE_ID sky.SkyboxFt = IMAGE_ID
+    sky.SkyboxLf = IMAGE_ID sky.SkyboxRt = IMAGE_ID sky.SkyboxUp = IMAGE_ID
 
     -- 3. Bouncing Text Spawner
-    RunService.RenderStepped:Connect(function()
-        if not IsRunning then return end
-        for i = 1, 2 do -- Spawns 2 per frame for chaos
-            local Label = Instance.new("TextLabel", ScreenGui)
-            Label.Size = UDim2.new(0, 180, 0, 40)
-            Label.Text = "YOU ARE AN IDIOT"
-            Label.BackgroundColor3 = Color3.new(0,0,0)
-            Label.TextColor3 = Color3.new(1,1,1)
-            Label.Position = UDim2.new(math.random(), 0, math.random(), 0)
+    task.spawn(function()
+        while true do
+            local l = Instance.new("TextLabel", ScreenGui)
+            l.Size = UDim2.new(0, 200, 0, 50)
+            l.Position = UDim2.new(math.random(), 0, math.random(), 0)
+            l.Text = "YOU ARE AN IDIOT"
+            l.BackgroundColor3 = Color3.new(0,0,0)
+            l.TextColor3 = Color3.new(1,1,1)
+            l.ZIndex = 100
             
             local vx, vy = math.random(5, 15), math.random(5, 15)
             task.spawn(function()
-                while IsRunning do
-                    Label.Position = Label.Position + UDim2.new(0, vx, 0, vy)
-                    if Label.Position.X.Offset > 800 or Label.Position.X.Offset < 0 then vx = -vx end
-                    if Label.Position.Y.Offset > 600 or Label.Position.Y.Offset < 0 then vy = -vy end
+                for i = 1, 500 do
+                    l.Position = l.Position + UDim2.new(0, vx, 0, vy)
+                    if l.Position.X.Offset > 800 or l.Position.X.Offset < 0 then vx = -vx end
+                    if l.Position.Y.Offset > 600 or l.Position.Y.Offset < 0 then vy = -vy end
                     task.wait(0.01)
                 end
-                Label:Destroy()
+                l:Destroy()
             end)
+            task.wait(2)
         end
-        task.wait(0.5) -- Throttled to prevent Android crash
     end)
-    
-    -- 4. Exit Block (Invisible Button Overlay)
-    local Block = Instance.new("TextButton", ScreenGui)
-    Block.Size = UDim2.new(1, 0, 1, 0)
-    Block.BackgroundTransparency = 1
-    Block.Text = ""
-    Block.ZIndex = 10000
 end
 
-Toggle.MouseButton1Click:Connect(function()
-    if not IsRunning then
-        IsRunning = true
-        Toggle.Text = "VIRUS: ACTIVE"
-        Toggle.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-        TriggerVirus()
-    else
-        IsRunning = false
-        Toggle.Text = "ACTIVATE VIRUS"
-        Toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+ExecuteBtn.MouseButton1Click:Connect(function()
+    ExecuteBtn.Text = "CHAOS ACTIVE"
+    ExecuteBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+    GlobalInfection()
+    
+    -- Mencoba menghancurkan physics (Jika Network Ownership mengizinkan)
+    for _, p in pairs(workspace:GetDescendants()) do
+        if p:IsA("BasePart") and not p.Anchored then
+            p.Velocity = Vector3.new(0, 50, 0)
+            p.RotVelocity = Vector3.new(50, 50, 50)
+        end
     end
 end)
