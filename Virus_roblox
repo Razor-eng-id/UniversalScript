@@ -1,106 +1,101 @@
--- [[ #Chaos :: BROOKHAVEN_BREAKER_V4 ]] --
--- ARCHITECT: JANUS/TESAVEK 👾⚡
--- TARGET: BROOKHAVEN RP (GLOBAL REPLICATION ATTEMPT)
+-- [[ #Chaos :: ENTROPY_V6_CLEAN_BUILD ]] --
+-- TARGET: UNIVERSAL MOUNTAIN & RP GAMES
+-- UPDATE: REMOVED BOUNCING TEXT FOR BETTER MOVEMENT
 
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
--- [[ ASSET CONFIG ]] --
+-- [[ ASSETS - TETAP & TIDAK BERUBAH ]] --
 local AUDIO_ID = "rbxassetid://102171623937"
 local IMAGE_ID = "rbxassetid://978272452581"
 
--- [[ UI SYSTEM ]] --
+-- [[ UI INITIALIZATION ]] --
 local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
 local Main = Instance.new("Frame", ScreenGui)
-Main.Size = UDim2.new(0, 300, 0, 180)
-Main.Position = UDim2.new(0.5, -150, 0.5, -90)
-Main.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 15)
+Main.Size = UDim2.new(0, 280, 0, 150)
+Main.Position = UDim2.new(0.5, -140, 0.5, -75)
+Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+local MCorner = Instance.new("UICorner", Main)
+MCorner.CornerRadius = UDim.new(0, 15)
 
-local Title = Instance.new("TextLabel", Main)
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.Text = "BROOKHAVEN ENTROPY V4"
-Title.TextColor3 = Color3.new(1, 0, 0)
-Title.BackgroundTransparency = 1
-Title.Font = Enum.Font.GothamBold
+local Toggle = Instance.new("TextButton", Main)
+Toggle.Size = UDim2.new(0, 220, 0, 50)
+Toggle.Position = UDim2.new(0.5, -110, 0.5, 0)
+Toggle.Text = "START UNIVERSAL VIRUS"
+Toggle.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
+Toggle.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", Toggle)
 
-local ExecuteBtn = Instance.new("TextButton", Main)
-ExecuteBtn.Size = UDim2.new(0, 240, 0, 50)
-ExecuteBtn.Position = UDim2.new(0.5, -120, 0.5, 0)
-ExecuteBtn.Text = "INITIALIZE CHAOS"
-ExecuteBtn.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
-ExecuteBtn.TextColor3 = Color3.new(1, 1, 1)
-Instance.new("UICorner", ExecuteBtn)
+-- [[ MINIMIZE LOGIC ]] --
+local MiniBox = Instance.new("TextButton", ScreenGui)
+MiniBox.Size = UDim2.new(0, 50, 0, 50)
+MiniBox.Visible = false
+MiniBox.Text = "JS"
+MiniBox.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MiniBox.TextColor3 = Color3.new(1, 0, 0)
+Instance.new("UICorner", MiniBox).CornerRadius = UDim.new(0, 12)
 
--- [[ DRAG LOGIC (MOBILE & PC) ]] --
-local s, p; Main.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then s = i.Position p = Main.Position end end)
-game:GetService("UserInputService").InputChanged:Connect(function(i) if (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) and s then
-    local d = i.Position - s Main.Position = UDim2.new(p.X.Scale, p.X.Offset + d.X, p.Y.Scale, p.Y.Offset + d.Y)
-end end)
-
--- [[ THE "BREAKER" ENGINE ]] --
-local function GlobalInfection()
-    -- 1. Mencari Remote Musik Rumah/Mobil Brookhaven
-    -- Brookhaven sering menggunakan folder 'Events' atau 'Remotes'
-    for _, v in pairs(game:GetDescendants()) do
-        if v:IsA("RemoteEvent") and (v.Name:lower():find("music") or v.Name:lower():find("sound") or v.Name:lower():find("play")) then
-            pcall(function()
-                v:FireServer(AUDIO_ID, 10, true) -- Mencoba memaksa lagu virus diputar di rumah/mobil
-                print("Injected Audio to: " .. v.Name)
-            end)
+-- Fungsi Drag & Minimize Tetap Ada (Agar UI Tidak Menghalangi)
+local function Drag(obj)
+    local dragging, dragStart, startPos
+    obj.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true dragStart = input.Position startPos = obj.Position
         end
-        -- Menargetkan papan tulis/signage (Visual Replikasi)
-        if v:IsA("RemoteEvent") and (v.Name:lower():find("update") or v.Name:lower():find("text")) then
-            pcall(function()
-                v:FireServer("YOU ARE AN IDIOT", IMAGE_ID)
-            end)
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging then
+            local delta = input.Position - dragStart
+            obj.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
-    end
+    end)
+    UserInputService.InputEnded:Connect(function() dragging = false end)
+end
+Drag(Main) Drag(MiniBox)
 
-    -- 2. Local Chaos (Fallback)
+Toggle.MouseButton1Click:Connect(function()
+    Toggle.Text = "VIRUS DEPLOYED"
+    Toggle.BackgroundColor3 = Color3.fromRGB(0, 100, 0)
+    
+    -- 1. Merusak Langit (Local + Attempt Global)
     Lighting.Brightness = 0
     local sky = Instance.new("Sky", Lighting)
     sky.SkyboxBk = IMAGE_ID sky.SkyboxDn = IMAGE_ID sky.SkyboxFt = IMAGE_ID
     sky.SkyboxLf = IMAGE_ID sky.SkyboxRt = IMAGE_ID sky.SkyboxUp = IMAGE_ID
 
-    -- 3. Bouncing Text Spawner
+    -- 2. Audio Virus
+    local s = Instance.new("Sound", game:GetService("SoundService"))
+    s.SoundId = AUDIO_ID s.Volume = 10 s.Looped = true s:Play()
+
+    -- 3. Noob Character Transformer (Hanya Visual Pakaian)
     task.spawn(function()
         while true do
-            local l = Instance.new("TextLabel", ScreenGui)
-            l.Size = UDim2.new(0, 200, 0, 50)
-            l.Position = UDim2.new(math.random(), 0, math.random(), 0)
-            l.Text = "YOU ARE AN IDIOT"
-            l.BackgroundColor3 = Color3.new(0,0,0)
-            l.TextColor3 = Color3.new(1,1,1)
-            l.ZIndex = 100
-            
-            local vx, vy = math.random(5, 15), math.random(5, 15)
-            task.spawn(function()
-                for i = 1, 500 do
-                    l.Position = l.Position + UDim2.new(0, vx, 0, vy)
-                    if l.Position.X.Offset > 800 or l.Position.X.Offset < 0 then vx = -vx end
-                    if l.Position.Y.Offset > 600 or l.Position.Y.Offset < 0 then vy = -vy end
-                    task.wait(0.01)
+            for _, p in pairs(Players:GetPlayers()) do
+                if p.Character then
+                    pcall(function()
+                        for _, v in pairs(p.Character:GetChildren()) do
+                            if v:IsA("Accessory") or v:IsA("Shirt") or v:IsA("Pants") then v:Destroy() end
+                        end
+                    end)
                 end
-                l:Destroy()
-            end)
-            task.wait(2)
+            end
+            task.wait(5)
         end
     end)
-end
 
-ExecuteBtn.MouseButton1Click:Connect(function()
-    ExecuteBtn.Text = "CHAOS ACTIVE"
-    ExecuteBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-    GlobalInfection()
-    
-    -- Mencoba menghancurkan physics (Jika Network Ownership mengizinkan)
-    for _, p in pairs(workspace:GetDescendants()) do
-        if p:IsA("BasePart") and not p.Anchored then
-            p.Velocity = Vector3.new(0, 50, 0)
-            p.RotVelocity = Vector3.new(50, 50, 50)
+    -- 4. Remote Scanner (Ujung Tombak agar Dilihat Orang Lain)
+    task.spawn(function()
+        for _, r in pairs(game:GetDescendants()) do
+            if r:IsA("RemoteEvent") then
+                pcall(function()
+                    r:FireServer("Skybox", IMAGE_ID)
+                    r:FireServer("Audio", AUDIO_ID)
+                    r:FireServer("Weather", "Chaos")
+                end)
+                task.wait(0.3) -- Delay agar tidak Error 267
+            end
         end
-    end
+    end)
 end)
