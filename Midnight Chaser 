@@ -1,98 +1,653 @@
--- [[ MIDNIGHT CHASER - GOD MODE V6 ANDROID ]] --
-local Player = game.Players.LocalPlayer
-local CoreGui = game:GetService("CoreGui")
-local UIS = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
+-- ============================================
+-- MIDNIGHT CHASERS: Full Script
+-- LocalScript + ServerScript GABUNGAN
+-- Taruh di: ServerScriptService sebagai Script
+-- ============================================
 
-if CoreGui:FindFirstChild("MidnightGodV6") then CoreGui.MidnightGodV6:Destroy() end
-local MidnightGod = Instance.new("ScreenGui", CoreGui)
-MidnightGod.Name = "MidnightGodV6"
+-- ============================================
+-- == SERVER SIDE ==
+-- ============================================
+if game:GetService("RunService"):IsServer() then
 
--- == UI BOX (MINIMALIS & MULUS) ==
-local MainFrame = Instance.new("Frame", MidnightGod)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.Size = UDim2.new(0, 180, 0, 260)
-MainFrame.Position = UDim2.new(0.5, -90, 0.5, -130)
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
-local Stroke = Instance.new("UIStroke", MainFrame)
-Stroke.Color = Color3.fromRGB(0, 255, 150); Stroke.Thickness = 2
+	local Players = game:GetService("Players")
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local RunService = game:GetService("RunService")
 
--- == MANUAL SPEED INPUT ==
-local SpeedBox = Instance.new("TextBox", MainFrame)
-SpeedBox.Size = UDim2.new(0, 160, 0, 30)
-SpeedBox.Position = UDim2.new(0, 10, 0, 40)
-SpeedBox.PlaceholderText = "Ketik Speed (Misal: 1000)"
-SpeedBox.Text = ""
-SpeedBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-SpeedBox.TextColor3 = Color3.fromRGB(0, 255, 150)
-Instance.new("UICorner", SpeedBox).CornerRadius = UDim.new(0, 8)
+	local remoteFolder = Instance.new("Folder")
+	remoteFolder.Name = "NitroRemotes"
+	remoteFolder.Parent = ReplicatedStorage
 
--- == AUTO-STEER & FARM LOGIC ==
-local AutoPilot = false
-local function GetCar()
-    return workspace:FindFirstChild(Player.Name.."'s Car") or workspace.Vehicles:FindFirstChild(Player.Name)
-end
+	local function makeRemote(name)
+		local r = Instance.new("RemoteEvent")
+		r.Name = name
+		r.Parent = remoteFolder
+		return r
+	end
 
-RunService.Heartbeat:Connect(function()
-    if AutoPilot then
-        pcall(function()
-            local car = GetCar()
-            local speedVal = tonumber(SpeedBox.Text) or 500
-            
-            -- SENSOR RAYCAST (Kiri & Kanan)
-            local root = car.PrimaryPart
-            local rayParams = RaycastParams.new()
-            rayParams.FilterDescendantsInstances = {car, workspace.Vehicles}
-            rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+	makeRemote("ToggleNitro")
+	makeRemote("ToggleDrift")
+	makeRemote("ToggleNoclip")
 
-            local leftRay = workspace:Raycast(root.Position, root.CFrame.RightVector * -15, rayParams)
-            local rightRay = workspace:Raycast(root.Position, root.CFrame.RightVector * 15, rayParams)
+	local CONFIG = {
+		NITRO_SPEED     = 120,
+		NORMAL_SPEED    = 32,
+		DRIFT_FRICTION  = 0.1,
+		NORMAL_FRICTION = 0.5,
+		SEAT_NAME       = "VehicleSeat",
+	}
 
-            -- LOGIKA AUTO-STEER (Belok otomatis kalo deket tembok)
-            if leftRay then
-                root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(-3), 0)
-            elseif rightRay then
-                root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(3), 0)
-            end
+	local playerData = {}
 
-            -- JALAN MAJU TERUS (FARMING DUIT)
-            root.Velocity = root.CFrame.LookVector * (speedVal / 3.6)
-            
-            -- INF NITRO & SINKRON KM/H
-            car.Drive.MaxSpeed.Value = speedVal / 3.6
-            if car:FindFirstChild("Nitro") then car.Nitro.Value = 100 end
-        end)
-    end
-end)
+	local function getCarSeat(player)
+		local char = player.Character
+		if not char then return nil end
+		for _, obj in pairs(workspace:GetDescendants()) do
+			if obj:IsA("VehicleSeat") and obj.Name == CONFIG.SEAT_NAME then
+				if obj.Occupant and obj.Occupant.Parent == char then
+					return obj
+				end
+			end
+		end
+		return nil
+	end
 
--- == BUTTONS ==
-local function AddBtn(txt, pos, callback)
-    local b = Instance.new("TextButton", MainFrame)
-    b.Size = UDim2.new(0, 160, 0, 35)
-    b.Position = pos
-    b.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    b.Text = txt; b.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
-    b.MouseButton1Click:Connect(callback)
-    return b
-end
+	remoteFolder.ToggleNitro.OnServerEvent:Connect(function(player, isOn)
+		playerData[player] = playerData[player] or {}
+		playerData[player].nitro = isOn
+		local seat = getCarSeat(player)
+		if seat then
+			seat.MaxSpeed  = isOn and CONFIG.NITRO_SPEED or CONFIG.NORMAL_SPEED
+			seat.Torque    = isOn and 150 or 80
+			seat.TurnSpeed = isOn and 1.5 or 1
+		end
+	end)
 
-local ApBtn = AddBtn("AUTO-PILOT FARM: OFF", UDim2.new(0, 10, 0, 80), function()
-    AutoPilot = not AutoPilot
-    MidnightGod.MainFrame.ApBtn.Text = AutoPilot and "AUTO-PILOT: ON" or "AUTO-PILOT: OFF"
-end)
+	remoteFolder.ToggleDrift.OnServerEvent:Connect(function(player, isOn)
+		playerData[player] = playerData[player] or {}
+		playerData[player].drift = isOn
+		local seat = getCarSeat(player)
+		if seat then
+			local car = seat.Parent
+			for _, part in pairs(car:GetDescendants()) do
+				if part:IsA("BasePart") then
+					local d = (part.CustomPhysicalProperties and part.CustomPhysicalProperties.Density) or 0.9
+					part.CustomPhysicalProperties = PhysicalProperties.new(
+						d,
+						isOn and CONFIG.DRIFT_FRICTION or CONFIG.NORMAL_FRICTION,
+						isOn and CONFIG.DRIFT_FRICTION or CONFIG.NORMAL_FRICTION,
+						0.5, 0.5
+					)
+				end
+			end
+			seat.TurnSpeed = isOn and 3 or ((playerData[player].nitro) and 1.5 or 1)
+		end
+	end)
 
-AddBtn("INSTANT STOP", UDim2.new(0, 10, 0, 125), function()
-    pcall(function() GetCar().PrimaryPart.Velocity = Vector3.new(0,0,0) end)
-end)
+	-- Noclip: handled client-side, server hanya terima event log
+	remoteFolder.ToggleNoclip.OnServerEvent:Connect(function(player, isOn)
+		-- bisa diperluas kalau perlu server action
+	end)
 
--- == MINIMIZE TO SQUARE ==
-local MiniBox = Instance.new("TextButton", MidnightGod)
-MiniBox.Size = UDim2.new(0, 45, 0, 45); MiniBox.Position = UDim2.new(0.85, 0, 0.2, 0)
-MiniBox.Text = "MC"; MiniBox.Visible = false; MiniBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-Instance.new("UICorner", MiniBox).CornerRadius = UDim.new(0, 10)
+	RunService.Heartbeat:Connect(function()
+		for player, data in pairs(playerData) do
+			if data.nitro then
+				local seat = getCarSeat(player)
+				if seat and seat.MaxSpeed ~= CONFIG.NITRO_SPEED then
+					seat.MaxSpeed = CONFIG.NITRO_SPEED
+					seat.Torque   = 150
+				end
+			end
+		end
+	end)
 
-local CloseBtn = Instance.new("TextButton", MainFrame)
-CloseBtn.Text = "_"; CloseBtn.Position = UDim2.new(1, -30, 0, 0); CloseBtn.Size = UDim2.new(0, 30, 0, 30); CloseBtn.BackgroundTransparency = 1
-CloseBtn.MouseButton1Click:Connect(function() MainFrame.Visible = false; MiniBox.Visible = true end)
-MiniBox.MouseButton1Click:Connect(function() MainFrame.Visible = true; MiniBox.Visible = false end)
+	Players.PlayerRemoving:Connect(function(p) playerData[p] = nil end)
+	print("[MidnightChasers] Server ✅")
+
+-- ============================================
+-- == CLIENT SIDE ==
+-- ============================================
+elseif game:GetService("RunService"):IsClient() then
+
+	local Players        = game:GetService("Players")
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local RunService     = game:GetService("RunService")
+	local UserInputService = game:GetService("UserInputService")
+	local TweenService   = game:GetService("TweenService")
+
+	local player    = Players.LocalPlayer
+	local playerGui = player.PlayerGui
+	local camera    = workspace.CurrentCamera
+
+	local remoteFolder     = ReplicatedStorage:WaitForChild("NitroRemotes")
+	local toggleNitroEvent = remoteFolder:WaitForChild("ToggleNitro")
+	local driftEvent       = remoteFolder:WaitForChild("ToggleDrift")
+	local noclipEvent      = remoteFolder:WaitForChild("ToggleNoclip")
+
+	-- State
+	local nitroOn   = false
+	local driftOn   = false
+	local noclipOn  = false
+	local espOn     = false
+
+	-- ==========================================
+	-- WARNA & STYLE
+	-- ==========================================
+	local C = {
+		bg       = Color3.fromRGB(15, 15, 20),
+		panel    = Color3.fromRGB(22, 22, 30),
+		accent   = Color3.fromRGB(80, 140, 255),
+		nitro    = Color3.fromRGB(50, 180, 255),
+		drift    = Color3.fromRGB(255, 130, 30),
+		noclip   = Color3.fromRGB(180, 80, 255),
+		esp      = Color3.fromRGB(80, 220, 120),
+		off      = Color3.fromRGB(45, 45, 55),
+		text     = Color3.fromRGB(220, 220, 230),
+		subtext  = Color3.fromRGB(130, 130, 150),
+		white    = Color3.fromRGB(255, 255, 255),
+	}
+
+	-- ==========================================
+	-- HELPER: Rounded Frame
+	-- ==========================================
+	local function rounded(parent, radius)
+		local c = Instance.new("UICorner")
+		c.CornerRadius = UDim.new(0, radius or 10)
+		c.Parent = parent
+		return c
+	end
+
+	local function shadow(parent)
+		local s = Instance.new("ImageLabel")
+		s.Name = "Shadow"
+		s.AnchorPoint = Vector2.new(0.5, 0.5)
+		s.BackgroundTransparency = 1
+		s.Position = UDim2.new(0.5, 0, 0.5, 4)
+		s.Size = UDim2.new(1, 20, 1, 20)
+		s.ZIndex = parent.ZIndex - 1
+		s.Image = "rbxassetid://6014261993"
+		s.ImageColor3 = Color3.fromRGB(0, 0, 0)
+		s.ImageTransparency = 0.5
+		s.ScaleType = Enum.ScaleType.Slice
+		s.SliceCenter = Rect.new(49, 49, 450, 450)
+		s.Parent = parent
+	end
+
+	-- ==========================================
+	-- MAIN GUI
+	-- ==========================================
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "MCGui"
+	screenGui.ResetOnSpawn = false
+	screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	screenGui.Parent = playerGui
+
+	-- Main Frame
+	local mainFrame = Instance.new("Frame")
+	mainFrame.Name = "Main"
+	mainFrame.Size = UDim2.new(0, 230, 0, 310)
+	mainFrame.Position = UDim2.new(0, 20, 0.5, -155)
+	mainFrame.BackgroundColor3 = C.bg
+	mainFrame.BorderSizePixel = 0
+	mainFrame.ZIndex = 2
+	mainFrame.Parent = screenGui
+	rounded(mainFrame, 14)
+	shadow(mainFrame)
+
+	-- Stroke outline
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromRGB(50, 55, 75)
+	stroke.Thickness = 1
+	stroke.Parent = mainFrame
+
+	-- ==========================================
+	-- TITLE BAR
+	-- ==========================================
+	local titleBar = Instance.new("Frame")
+	titleBar.Size = UDim2.new(1, 0, 0, 36)
+	titleBar.BackgroundColor3 = C.panel
+	titleBar.BorderSizePixel = 0
+	titleBar.ZIndex = 3
+	titleBar.Parent = mainFrame
+	rounded(titleBar, 14)
+
+	-- Fix bottom corners titlebar (biar tidak rounded bawah)
+	local titleFix = Instance.new("Frame")
+	titleFix.Size = UDim2.new(1, 0, 0.5, 0)
+	titleFix.Position = UDim2.new(0, 0, 0.5, 0)
+	titleFix.BackgroundColor3 = C.panel
+	titleFix.BorderSizePixel = 0
+	titleFix.ZIndex = 3
+	titleFix.Parent = titleBar
+
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -40, 1, 0)
+	titleLabel.Position = UDim2.new(0, 12, 0, 0)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Text = "🏎  Midnight Chasers"
+	titleLabel.TextColor3 = C.text
+	titleLabel.TextSize = 13
+	titleLabel.Font = Enum.Font.GothamBold
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.ZIndex = 4
+	titleLabel.Parent = titleBar
+
+	-- Minimize Button "_"
+	local minBtn = Instance.new("TextButton")
+	minBtn.Size = UDim2.new(0, 26, 0, 22)
+	minBtn.Position = UDim2.new(1, -32, 0.5, -11)
+	minBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 75)
+	minBtn.Text = "—"
+	minBtn.TextColor3 = C.text
+	minBtn.TextSize = 12
+	minBtn.Font = Enum.Font.GothamBold
+	minBtn.BorderSizePixel = 0
+	minBtn.ZIndex = 5
+	minBtn.Parent = titleBar
+	rounded(minBtn, 6)
+
+	-- ==========================================
+	-- CONTENT AREA
+	-- ==========================================
+	local content = Instance.new("Frame")
+	content.Name = "Content"
+	content.Size = UDim2.new(1, 0, 1, -36)
+	content.Position = UDim2.new(0, 0, 0, 36)
+	content.BackgroundTransparency = 1
+	content.ZIndex = 2
+	content.Parent = mainFrame
+
+	local padding = Instance.new("UIPadding")
+	padding.PaddingLeft   = UDim.new(0, 12)
+	padding.PaddingRight  = UDim.new(0, 12)
+	padding.PaddingTop    = UDim.new(0, 8)
+	padding.PaddingBottom = UDim.new(0, 8)
+	padding.Parent = content
+
+	local listLayout = Instance.new("UIListLayout")
+	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	listLayout.Padding = UDim.new(0, 7)
+	listLayout.Parent = content
+
+	-- ==========================================
+	-- HELPER: Toggle Button Row
+	-- ==========================================
+	local function makeToggle(labelText, color, order)
+		local row = Instance.new("Frame")
+		row.Size = UDim2.new(1, 0, 0, 34)
+		row.BackgroundColor3 = C.panel
+		row.BorderSizePixel = 0
+		row.LayoutOrder = order
+		row.ZIndex = 3
+		row.Parent = content
+		rounded(row, 8)
+
+		local lbl = Instance.new("TextLabel")
+		lbl.Size = UDim2.new(1, -54, 1, 0)
+		lbl.Position = UDim2.new(0, 10, 0, 0)
+		lbl.BackgroundTransparency = 1
+		lbl.Text = labelText
+		lbl.TextColor3 = C.text
+		lbl.TextSize = 12
+		lbl.Font = Enum.Font.Gotham
+		lbl.TextXAlignment = Enum.TextXAlignment.Left
+		lbl.ZIndex = 4
+		lbl.Parent = row
+
+		local toggle = Instance.new("TextButton")
+		toggle.Size = UDim2.new(0, 42, 0, 22)
+		toggle.Position = UDim2.new(1, -50, 0.5, -11)
+		toggle.BackgroundColor3 = C.off
+		toggle.Text = ""
+		toggle.BorderSizePixel = 0
+		toggle.ZIndex = 4
+		toggle.Parent = row
+		rounded(toggle, 11)
+
+		local knob = Instance.new("Frame")
+		knob.Size = UDim2.new(0, 16, 0, 16)
+		knob.Position = UDim2.new(0, 3, 0.5, -8)
+		knob.BackgroundColor3 = C.white
+		knob.BorderSizePixel = 0
+		knob.ZIndex = 5
+		knob.Parent = toggle
+		rounded(knob, 8)
+
+		local isOn = false
+		local tweenInfo = TweenInfo.new(0.15, Enum.EasingStyle.Quad)
+
+		local function setState(on)
+			isOn = on
+			local goal = on and {Position = UDim2.new(0, 23, 0.5, -8)} or {Position = UDim2.new(0, 3, 0.5, -8)}
+			TweenService:Create(knob, tweenInfo, goal):Play()
+			TweenService:Create(toggle, tweenInfo, {BackgroundColor3 = on and color or C.off}):Play()
+		end
+
+		toggle.MouseButton1Click:Connect(function()
+			setState(not isOn)
+		end)
+
+		return toggle, setState, function() return isOn end
+	end
+
+	-- ==========================================
+	-- HELPER: Section Label
+	-- ==========================================
+	local function makeSection(text, order)
+		local lbl = Instance.new("TextLabel")
+		lbl.Size = UDim2.new(1, 0, 0, 16)
+		lbl.BackgroundTransparency = 1
+		lbl.Text = text
+		lbl.TextColor3 = C.subtext
+		lbl.TextSize = 10
+		lbl.Font = Enum.Font.GothamBold
+		lbl.TextXAlignment = Enum.TextXAlignment.Left
+		lbl.LayoutOrder = order
+		lbl.ZIndex = 3
+		lbl.Parent = content
+	end
+
+	-- ==========================================
+	-- ROWS
+	-- ==========================================
+	makeSection("⚡  VEHICLE", 1)
+
+	local nitroToggle, setNitro = makeToggle("Nitro Infinite", C.nitro, 2)
+	local driftToggle, setDrift = makeToggle("Drift Mode", C.drift, 3)
+
+	makeSection("🔧  MISC", 4)
+
+	local noclipToggle, setNoclip = makeToggle("Noclip Traffic", C.noclip, 5)
+	local espToggle, setEsp = makeToggle("ESP Players", C.esp, 6)
+
+	makeSection("🎨  TAMPILAN", 7)
+
+	-- Slider Transparansi
+	local sliderRow = Instance.new("Frame")
+	sliderRow.Size = UDim2.new(1, 0, 0, 42)
+	sliderRow.BackgroundColor3 = C.panel
+	sliderRow.BorderSizePixel = 0
+	sliderRow.LayoutOrder = 8
+	sliderRow.ZIndex = 3
+	sliderRow.Parent = content
+	rounded(sliderRow, 8)
+
+	local sliderLbl = Instance.new("TextLabel")
+	sliderLbl.Size = UDim2.new(1, -40, 0, 18)
+	sliderLbl.Position = UDim2.new(0, 10, 0, 4)
+	sliderLbl.BackgroundTransparency = 1
+	sliderLbl.Text = "Transparansi GUI"
+	sliderLbl.TextColor3 = C.text
+	sliderLbl.TextSize = 11
+	sliderLbl.Font = Enum.Font.Gotham
+	sliderLbl.TextXAlignment = Enum.TextXAlignment.Left
+	sliderLbl.ZIndex = 4
+	sliderLbl.Parent = sliderRow
+
+	local sliderValLbl = Instance.new("TextLabel")
+	sliderValLbl.Size = UDim2.new(0, 34, 0, 18)
+	sliderValLbl.Position = UDim2.new(1, -42, 0, 4)
+	sliderValLbl.BackgroundTransparency = 1
+	sliderValLbl.Text = "0%"
+	sliderValLbl.TextColor3 = C.subtext
+	sliderValLbl.TextSize = 10
+	sliderValLbl.Font = Enum.Font.Gotham
+	sliderValLbl.TextXAlignment = Enum.TextXAlignment.Right
+	sliderValLbl.ZIndex = 4
+	sliderValLbl.Parent = sliderRow
+
+	local sliderBg = Instance.new("Frame")
+	sliderBg.Size = UDim2.new(1, -20, 0, 6)
+	sliderBg.Position = UDim2.new(0, 10, 0, 28)
+	sliderBg.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
+	sliderBg.BorderSizePixel = 0
+	sliderBg.ZIndex = 4
+	sliderBg.Parent = sliderRow
+	rounded(sliderBg, 3)
+
+	local sliderFill = Instance.new("Frame")
+	sliderFill.Size = UDim2.new(0, 0, 1, 0)
+	sliderFill.BackgroundColor3 = C.accent
+	sliderFill.BorderSizePixel = 0
+	sliderFill.ZIndex = 5
+	sliderFill.Parent = sliderBg
+	rounded(sliderFill, 3)
+
+	local sliderKnob = Instance.new("Frame")
+	sliderKnob.Size = UDim2.new(0, 14, 0, 14)
+	sliderKnob.Position = UDim2.new(0, -7, 0.5, -7)
+	sliderKnob.BackgroundColor3 = C.white
+	sliderKnob.BorderSizePixel = 0
+	sliderKnob.ZIndex = 6
+	sliderKnob.Parent = sliderBg
+	rounded(sliderKnob, 7)
+
+	-- Slider drag logic
+	local draggingSlider = false
+	local guiTransparency = 0
+
+	local function updateSlider(val)
+		val = math.clamp(val, 0, 1)
+		guiTransparency = val
+		sliderFill.Size = UDim2.new(val, 0, 1, 0)
+		sliderKnob.Position = UDim2.new(val, -7, 0.5, -7)
+		sliderValLbl.Text = math.floor(val * 100) .. "%"
+		-- Apply ke semua frame (kecuali konten teks)
+		mainFrame.BackgroundTransparency = val * 0.95
+		titleBar.BackgroundTransparency = val * 0.95
+		titleFix.BackgroundTransparency = val * 0.95
+		for _, f in pairs(content:GetDescendants()) do
+			if f:IsA("Frame") and f.Name ~= "Shadow" then
+				f.BackgroundTransparency = val * 0.95
+			end
+		end
+	end
+
+	sliderBg.InputBegan:Connect(function(inp)
+		if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+			draggingSlider = true
+		end
+	end)
+
+	UserInputService.InputEnded:Connect(function(inp)
+		if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+			draggingSlider = false
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(inp)
+		if draggingSlider and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
+			local bgPos  = sliderBg.AbsolutePosition.X
+			local bgSize = sliderBg.AbsoluteSize.X
+			local relX   = (inp.Position.X - bgPos) / bgSize
+			updateSlider(relX)
+		end
+	end)
+
+	-- ==========================================
+	-- MINIMIZE / FLOATING BUBBLE
+	-- ==========================================
+	local bubble = Instance.new("TextButton")
+	bubble.Name = "Bubble"
+	bubble.Size = UDim2.new(0, 48, 0, 48)
+	bubble.Position = UDim2.new(0, 20, 0.5, 0)
+	bubble.BackgroundColor3 = C.accent
+	bubble.Text = "🏎"
+	bubble.TextSize = 20
+	bubble.BorderSizePixel = 0
+	bubble.Visible = false
+	bubble.ZIndex = 10
+	bubble.Parent = screenGui
+	rounded(bubble, 14)
+	shadow(bubble)
+
+	-- Drag bubble
+	local draggingBubble = false
+	local dragOffsetBubble = Vector2.new(0, 0)
+
+	bubble.InputBegan:Connect(function(inp)
+		if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+			draggingBubble = true
+			dragOffsetBubble = Vector2.new(
+				inp.Position.X - bubble.AbsolutePosition.X,
+				inp.Position.Y - bubble.AbsolutePosition.Y
+			)
+		end
+	end)
+
+	UserInputService.InputEnded:Connect(function(inp)
+		if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+			draggingBubble = false
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(inp)
+		if draggingBubble and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
+			bubble.Position = UDim2.new(0, inp.Position.X - dragOffsetBubble.X, 0, inp.Position.Y - dragOffsetBubble.Y)
+		end
+	end)
+
+	-- Toggle minimize
+	local minimized = false
+	local function toggleMinimize()
+		minimized = not minimized
+		mainFrame.Visible = not minimized
+		bubble.Visible = minimized
+	end
+
+	minBtn.MouseButton1Click:Connect(toggleMinimize)
+	bubble.MouseButton1Click:Connect(function()
+		if draggingBubble then return end
+		toggleMinimize()
+	end)
+
+	-- Drag main frame
+	local draggingMain = false
+	local dragOffsetMain = Vector2.new(0,0)
+
+	titleBar.InputBegan:Connect(function(inp)
+		if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+			draggingMain = true
+			dragOffsetMain = Vector2.new(
+				inp.Position.X - mainFrame.AbsolutePosition.X,
+				inp.Position.Y - mainFrame.AbsolutePosition.Y
+			)
+		end
+	end)
+
+	UserInputService.InputEnded:Connect(function(inp)
+		if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+			draggingMain = false
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(inp)
+		if draggingMain and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
+			mainFrame.Position = UDim2.new(0, inp.Position.X - dragOffsetMain.X, 0, inp.Position.Y - dragOffsetMain.Y)
+		end
+	end)
+
+	-- ==========================================
+	-- NITRO LOGIC
+	-- ==========================================
+	nitroToggle.MouseButton1Click:Connect(function()
+		nitroOn = not nitroOn
+		setNitro(nitroOn)
+		toggleNitroEvent:FireServer(nitroOn)
+	end)
+
+	-- ==========================================
+	-- DRIFT LOGIC
+	-- ==========================================
+	driftToggle.MouseButton1Click:Connect(function()
+		driftOn = not driftOn
+		setDrift(driftOn)
+		driftEvent:FireServer(driftOn)
+	end)
+
+	-- ==========================================
+	-- NOCLIP TRAFFIC LOGIC
+	-- ==========================================
+	noclipToggle.MouseButton1Click:Connect(function()
+		noclipOn = not noclipOn
+		setNoclip(noclipOn)
+		noclipEvent:FireServer(noclipOn)
+	end)
+
+	-- Cari model NPC traffic dan set CanCollide
+	local function setTrafficCollision(enabled)
+		for _, obj in pairs(workspace:GetDescendants()) do
+			-- Filter NPC traffic: biasanya namanya "Car", "Traffic", "NPC", dll
+			-- Edit keyword di bawah sesuai nama model traffic di game
+			local name = obj.Name:lower()
+			if obj:IsA("BasePart") and (
+				name:find("traffic") or
+				name:find("npc") or
+				name:find("vehicle") or
+				obj.Parent and obj.Parent.Name:lower():find("traffic")
+			) then
+				obj.CanCollide = enabled
+			end
+		end
+	end
+
+	RunService.Heartbeat:Connect(function()
+		if noclipOn then
+			setTrafficCollision(false)
+		end
+	end)
+
+	-- ==========================================
+	-- ESP LOGIC
+	-- ==========================================
+	local espBillboards = {}
+
+	local function removeESP()
+		for _, bb in pairs(espBillboards) do
+			if bb and bb.Parent then bb:Destroy() end
+		end
+		espBillboards = {}
+	end
+
+	local function createESP(target)
+		local char = target.Character
+		if not char then return end
+		local hrp = char:FindFirstChild("HumanoidRootPart")
+		if not hrp then return end
+
+		-- Billboard
+		local bb = Instance.new("BillboardGui")
+		bb.Name = "ESPBillboard_" .. target.Name
+		bb.Size = UDim2.new(0, 80, 0, 55)
+		bb.StudsOffset = Vector3.new(0, 3.5, 0)
+		bb.AlwaysOnTop = true
+		bb.Adornee = hrp
+		bb.Parent = playerGui
+
+		-- Box outline
+		local box = Instance.new("Frame")
+		box.Size = UDim2.new(1, 0, 1, 0)
+		box.BackgroundTransparency = 1
+		box.BorderSizePixel = 0
+		box.Parent = bb
+
+		local boxStroke = Instance.new("UIStroke")
+		boxStroke.Color = C.esp
+		boxStroke.Thickness = 1.5
+		boxStroke.Parent = box
+		rounded(box, 4)
+
+		-- Nama
+		local nameLbl = Instance.new("TextLabel")
+		nameLbl.Size = UDim2.new(1, 0, 0, 14)
+		nameLbl.Position = UDim2.new(0, 0, 0, -16)
+		nameLbl.BackgroundTransparency = 1
+		nameLbl.Text = target.Name
+		nameLbl.TextColor3 = C.esp
+		nameLbl.TextSize = 11
+		nameLbl.Font = Enum.Font.GothamBold
+		nameLbl.TextStrokeTransparency = 0.4
+		nameLbl.TextStrokeColor3 = Color3.fromRGB(0,0,0)
+		nameLbl.Parent = bb
+
+		-- Jarak
+		local distLbl = Instance.new(
