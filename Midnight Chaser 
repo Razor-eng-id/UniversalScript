@@ -1,185 +1,98 @@
--- [[ MIDNIGHT CHASER - ANDROID GOD MODE V3 ]] --
+-- [[ MIDNIGHT CHASER - GOD MODE V6 ANDROID ]] --
 local Player = game.Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
 local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
--- == CLEANUP ==
-if CoreGui:FindFirstChild("MidnightGod") then
-    CoreGui.MidnightGod:Destroy()
-end
+if CoreGui:FindFirstChild("MidnightGodV6") then CoreGui.MidnightGodV6:Destroy() end
+local MidnightGod = Instance.new("ScreenGui", CoreGui)
+MidnightGod.Name = "MidnightGodV6"
 
--- == CONTAINER ==
-local MidnightGod = Instance.new("ScreenGui")
-MidnightGod.Name = "MidnightGod"
-MidnightGod.Parent = CoreGui
-
--- == FUNGSI DRAG UNIVERSAL ==
-local function MakeDraggable(Frame)
-    local dragStart, startPos, dragging
-    Frame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = input.Position
-            startPos = Frame.Position
-        end
-    end)
-    UIS.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
-            local delta = input.Position - dragStart
-            Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-    UIS.InputEnded:Connect(function() dragging = false end)
-end
-
--- == MAIN FRAME (MENU GEDE) ==
-local MainFrame = Instance.new("Frame")
-local MainCorner = Instance.new("UICorner")
-local MainStroke = Instance.new("UIStroke")
-
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = MidnightGod
+-- == UI BOX (MINIMALIS & MULUS) ==
+local MainFrame = Instance.new("Frame", MidnightGod)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.Position = UDim2.new(0.5, -90, 0.5, -80)
-MainFrame.Size = UDim2.new(0, 180, 0, 200) -- Ukuran agak tinggi dikit buat fitur baru
-MainFrame.ClipsDescendants = true
+MainFrame.Size = UDim2.new(0, 180, 0, 260)
+MainFrame.Position = UDim2.new(0.5, -90, 0.5, -130)
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
+local Stroke = Instance.new("UIStroke", MainFrame)
+Stroke.Color = Color3.fromRGB(0, 255, 150); Stroke.Thickness = 2
 
-MainCorner.CornerRadius = UDim.new(0, 12)
-MainCorner.Parent = MainFrame
+-- == MANUAL SPEED INPUT ==
+local SpeedBox = Instance.new("TextBox", MainFrame)
+SpeedBox.Size = UDim2.new(0, 160, 0, 30)
+SpeedBox.Position = UDim2.new(0, 10, 0, 40)
+SpeedBox.PlaceholderText = "Ketik Speed (Misal: 1000)"
+SpeedBox.Text = ""
+SpeedBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+SpeedBox.TextColor3 = Color3.fromRGB(0, 255, 150)
+Instance.new("UICorner", SpeedBox).CornerRadius = UDim.new(0, 8)
 
-MainStroke.Color = Color3.fromRGB(0, 255, 150)
-MainStroke.Thickness = 2
-MainStroke.Parent = MainFrame
-
--- == MINIMIZED BOX (KOTAK DRAGGABLE) ==
-local MiniBox = Instance.new("TextButton")
-local MiniCorner = Instance.new("UICorner")
-MiniBox.Name = "MiniBox"
-MiniBox.Parent = MidnightGod
-MiniBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-MiniBox.Size = UDim2.new(0, 45, 0, 45)
-MiniBox.Text = "MC"
-MiniBox.TextColor3 = Color3.fromRGB(0, 255, 150)
-MiniBox.Visible = false
-MiniCorner.CornerRadius = UDim.new(0, 10)
-MiniCorner.Parent = MiniBox
-
-MakeDraggable(MainFrame)
-MakeDraggable(MiniBox)
-
-MiniBox.MouseButton1Click:Connect(function()
-    MainFrame.Visible = true
-    MiniBox.Visible = false
-end)
-
--- == HEADER ==
-local Title = Instance.new("TextLabel")
-Title.Parent = MainFrame
-Title.Size = UDim2.new(1, -30, 0, 30)
-Title.Text = "  GOD MODE V3"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.BackgroundTransparency = 1
-Title.Font = Enum.Font.GothamBold
-Title.TextXAlignment = Enum.TextXAlignment.Left
-
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Parent = MainFrame
-CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-CloseBtn.Position = UDim2.new(1, -30, 0, 0)
-CloseBtn.Text = "_"
-CloseBtn.TextColor3 = Color3.fromRGB(200, 50, 50)
-CloseBtn.BackgroundTransparency = 1
-CloseBtn.MouseButton1Click:Connect(function()
-    MainFrame.Visible = false
-    MiniBox.Visible = true
-end)
-
--- == CONTAINER FITUR ==
-local Container = Instance.new("ScrollingFrame")
-Container.Parent = MainFrame
-Container.Position = UDim2.new(0, 10, 0, 35)
-Container.Size = UDim2.new(1, -20, 1, -45)
-Container.BackgroundTransparency = 1
-Container.CanvasSize = UDim2.new(0,0,1,150)
-local List = Instance.new("UIListLayout")
-List.Parent = Container
-List.Padding = UDim.new(0, 5)
-
-local function AddBtn(txt, callback)
-    local b = Instance.new("TextButton")
-    local c = Instance.new("UICorner")
-    b.Size = UDim2.new(1, 0, 0, 30)
-    b.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    b.Text = txt
-    b.TextColor3 = Color3.fromRGB(255, 255, 255)
-    b.Font = Enum.Font.Gotham
-    b.Parent = Container
-    c.CornerRadius = UDim.new(0, 8)
-    c.Parent = b
-    b.MouseButton1Click:Connect(callback)
+-- == AUTO-STEER & FARM LOGIC ==
+local AutoPilot = false
+local function GetCar()
+    return workspace:FindFirstChild(Player.Name.."'s Car") or workspace.Vehicles:FindFirstChild(Player.Name)
 end
 
--- ====================
--- === FITUR UTAMA ===
--- ====================
+RunService.Heartbeat:Connect(function()
+    if AutoPilot then
+        pcall(function()
+            local car = GetCar()
+            local speedVal = tonumber(SpeedBox.Text) or 500
+            
+            -- SENSOR RAYCAST (Kiri & Kanan)
+            local root = car.PrimaryPart
+            local rayParams = RaycastParams.new()
+            rayParams.FilterDescendantsInstances = {car, workspace.Vehicles}
+            rayParams.FilterType = Enum.RaycastFilterType.Blacklist
 
--- 1. BOOST SPEED & INFINITE NITRO
-AddBtn("BOOST & INF NITRO", function()
-    pcall(function()
-        local car = workspace:FindFirstChild(Player.Name.."'s Car") or workspace.Vehicles:FindFirstChild(Player.Name)
-        -- Speed & Torque
-        car.Drive.MaxSpeed.Value = 3000
-        car.Drive.Torque.Value = 15000
-        -- Infinite Nitro Logic
-        if car:FindFirstChild("Nitro") then
-            car.Nitro.Value = 999999
-            car.Nitro.MaxNitro.Value = 999999
-        end
-    end)
-end)
+            local leftRay = workspace:Raycast(root.Position, root.CFrame.RightVector * -15, rayParams)
+            local rightRay = workspace:Raycast(root.Position, root.CFrame.RightVector * 15, rayParams)
 
--- 2. NPC NOCLIP (Tembus Mobil Lain)
-local NoclipNPC = false
-AddBtn("GHOST NPC: OFF", function(self)
-    NoclipNPC = not NoclipNPC
-    script.Parent.Text = NoclipNPC and "GHOST NPC: ON" or "GHOST NPC: OFF"
-end)
+            -- LOGIKA AUTO-STEER (Belok otomatis kalo deket tembok)
+            if leftRay then
+                root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(-3), 0)
+            elseif rightRay then
+                root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(3), 0)
+            end
 
-task.spawn(function()
-    while task.wait(0.1) do
-        if NoclipNPC then
-            pcall(function()
-                for i,v in pairs(workspace.Vehicles:GetChildren()) do
-                    if v.Name ~= Player.Name and v.Name ~= Player.Name.."'s Car" then
-                        for _, part in pairs(v:GetDescendants()) do
-                            if part:IsA("BasePart") then
-                                part.CanCollide = false
-                            end
-                        end
-                    end
-                end
-            end)
-        end
+            -- JALAN MAJU TERUS (FARMING DUIT)
+            root.Velocity = root.CFrame.LookVector * (speedVal / 3.6)
+            
+            -- INF NITRO & SINKRON KM/H
+            car.Drive.MaxSpeed.Value = speedVal / 3.6
+            if car:FindFirstChild("Nitro") then car.Nitro.Value = 100 end
+        end)
     end
 end)
 
--- 3. AUTO DRIFT
-local FarmOn = false
-AddBtn("AUTO DRIFT", function() FarmOn = not FarmOn end)
+-- == BUTTONS ==
+local function AddBtn(txt, pos, callback)
+    local b = Instance.new("TextButton", MainFrame)
+    b.Size = UDim2.new(0, 160, 0, 35)
+    b.Position = pos
+    b.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    b.Text = txt; b.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+    b.MouseButton1Click:Connect(callback)
+    return b
+end
 
-task.spawn(function()
-    while task.wait(0.1) do
-        if FarmOn then
-            pcall(function()
-                Player.Character.HumanoidRootPart.RotVelocity = Vector3.new(0, 50, 0)
-            end)
-        end
-    end
+local ApBtn = AddBtn("AUTO-PILOT FARM: OFF", UDim2.new(0, 10, 0, 80), function()
+    AutoPilot = not AutoPilot
+    MidnightGod.MainFrame.ApBtn.Text = AutoPilot and "AUTO-PILOT: ON" or "AUTO-PILOT: OFF"
 end)
 
-AddBtn("INSTANT STOP", function()
-    pcall(function()
-        local car = workspace:FindFirstChild(Player.Name.."'s Car")
-        car.PrimaryPart.Velocity = Vector3.new(0,0,0)
-    end)
+AddBtn("INSTANT STOP", UDim2.new(0, 10, 0, 125), function()
+    pcall(function() GetCar().PrimaryPart.Velocity = Vector3.new(0,0,0) end)
 end)
+
+-- == MINIMIZE TO SQUARE ==
+local MiniBox = Instance.new("TextButton", MidnightGod)
+MiniBox.Size = UDim2.new(0, 45, 0, 45); MiniBox.Position = UDim2.new(0.85, 0, 0.2, 0)
+MiniBox.Text = "MC"; MiniBox.Visible = false; MiniBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Instance.new("UICorner", MiniBox).CornerRadius = UDim.new(0, 10)
+
+local CloseBtn = Instance.new("TextButton", MainFrame)
+CloseBtn.Text = "_"; CloseBtn.Position = UDim2.new(1, -30, 0, 0); CloseBtn.Size = UDim2.new(0, 30, 0, 30); CloseBtn.BackgroundTransparency = 1
+CloseBtn.MouseButton1Click:Connect(function() MainFrame.Visible = false; MiniBox.Visible = true end)
+MiniBox.MouseButton1Click:Connect(function() MainFrame.Visible = true; MiniBox.Visible = false end)
