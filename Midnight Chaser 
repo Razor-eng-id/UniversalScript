@@ -1,81 +1,185 @@
 -- [[ MIDNIGHT CHASER - ANDROID GOD MODE V3 ]] --
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
-local Window = Library.CreateLib("MIDNIGHT CHASER 🏎️", "Midnight")
-
--- === CUSTOM ANDROID DRAGGABLE & MINIMIZE ===
-local UserInputService = game:GetService("UserInputService")
+local Player = game.Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
+local UIS = game:GetService("UserInputService")
 
-pcall(function()
-    local MainGui = CoreGui:FindFirstChild("Midnight") or game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("Midnight")
-    local MainFrame = MainGui.Main
-    
-    -- 1. BIAR BISA DI-DRAG DI HP
-    local dragging, dragInput, dragStart, startPos
-    MainFrame.InputBegan:Connect(function(input)
+-- == CLEANUP ==
+if CoreGui:FindFirstChild("MidnightGod") then
+    CoreGui.MidnightGod:Destroy()
+end
+
+-- == CONTAINER ==
+local MidnightGod = Instance.new("ScreenGui")
+MidnightGod.Name = "MidnightGod"
+MidnightGod.Parent = CoreGui
+
+-- == FUNGSI DRAG UNIVERSAL ==
+local function MakeDraggable(Frame)
+    local dragStart, startPos, dragging
+    Frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
-            startPos = MainFrame.Position
+            startPos = Frame.Position
         end
     end)
-    UserInputService.InputChanged:Connect(function(input)
+    UIS.InputChanged:Connect(function(input)
         if dragging and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
             local delta = input.Position - dragStart
-            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
-    UserInputService.InputEnded:Connect(function(input)
-        dragging = false
-    end)
+    UIS.InputEnded:Connect(function() dragging = false end)
+end
 
-    -- 2. FITUR MINIMIZE (Floating Button)
-    local MinBtn = Instance.new("TextButton")
-    MinBtn.Name = "MinButton"
-    MinBtn.Parent = MainGui
-    MinBtn.Size = UDim2.new(0, 50, 0, 50)
-    MinBtn.Position = UDim2.new(0.1, 0, 0.1, 0)
-    MinBtn.Text = "MC"
-    MinBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    MinBtn.TextColor3 = Color3.fromRGB(0, 255, 150)
-    MinBtn.Visible = false
-    MinBtn.Draggable = true -- Button bawaan roblox bisa di-drag
+-- == MAIN FRAME (MENU GEDE) ==
+local MainFrame = Instance.new("Frame")
+local MainCorner = Instance.new("UICorner")
+local MainStroke = Instance.new("UIStroke")
 
-    -- Tombol Minimize di Pojok Atas Menu
-    local CloseBtn = Instance.new("TextButton")
-    CloseBtn.Parent = MainFrame
-    CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-    CloseBtn.Position = UDim2.new(1, -35, 0, 5)
-    CloseBtn.Text = "_"
-    CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-    
-    CloseBtn.MouseButton1Click:Connect(function()
-        MainFrame.Visible = false
-        MinBtn.Visible = true
-    end)
-    
-    MinBtn.MouseButton1Click:Connect(function()
-        MainFrame.Visible = true
-        MinBtn.Visible = false
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = MidnightGod
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.Position = UDim2.new(0.5, -90, 0.5, -80)
+MainFrame.Size = UDim2.new(0, 180, 0, 200) -- Ukuran agak tinggi dikit buat fitur baru
+MainFrame.ClipsDescendants = true
+
+MainCorner.CornerRadius = UDim.new(0, 12)
+MainCorner.Parent = MainFrame
+
+MainStroke.Color = Color3.fromRGB(0, 255, 150)
+MainStroke.Thickness = 2
+MainStroke.Parent = MainFrame
+
+-- == MINIMIZED BOX (KOTAK DRAGGABLE) ==
+local MiniBox = Instance.new("TextButton")
+local MiniCorner = Instance.new("UICorner")
+MiniBox.Name = "MiniBox"
+MiniBox.Parent = MidnightGod
+MiniBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MiniBox.Size = UDim2.new(0, 45, 0, 45)
+MiniBox.Text = "MC"
+MiniBox.TextColor3 = Color3.fromRGB(0, 255, 150)
+MiniBox.Visible = false
+MiniCorner.CornerRadius = UDim.new(0, 10)
+MiniCorner.Parent = MiniBox
+
+MakeDraggable(MainFrame)
+MakeDraggable(MiniBox)
+
+MiniBox.MouseButton1Click:Connect(function()
+    MainFrame.Visible = true
+    MiniBox.Visible = false
+end)
+
+-- == HEADER ==
+local Title = Instance.new("TextLabel")
+Title.Parent = MainFrame
+Title.Size = UDim2.new(1, -30, 0, 30)
+Title.Text = "  GOD MODE V3"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.BackgroundTransparency = 1
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Parent = MainFrame
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -30, 0, 0)
+CloseBtn.Text = "_"
+CloseBtn.TextColor3 = Color3.fromRGB(200, 50, 50)
+CloseBtn.BackgroundTransparency = 1
+CloseBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    MiniBox.Visible = true
+end)
+
+-- == CONTAINER FITUR ==
+local Container = Instance.new("ScrollingFrame")
+Container.Parent = MainFrame
+Container.Position = UDim2.new(0, 10, 0, 35)
+Container.Size = UDim2.new(1, -20, 1, -45)
+Container.BackgroundTransparency = 1
+Container.CanvasSize = UDim2.new(0,0,1,150)
+local List = Instance.new("UIListLayout")
+List.Parent = Container
+List.Padding = UDim.new(0, 5)
+
+local function AddBtn(txt, callback)
+    local b = Instance.new("TextButton")
+    local c = Instance.new("UICorner")
+    b.Size = UDim2.new(1, 0, 0, 30)
+    b.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    b.Text = txt
+    b.TextColor3 = Color3.fromRGB(255, 255, 255)
+    b.Font = Enum.Font.Gotham
+    b.Parent = Container
+    c.CornerRadius = UDim.new(0, 8)
+    c.Parent = b
+    b.MouseButton1Click:Connect(callback)
+end
+
+-- ====================
+-- === FITUR UTAMA ===
+-- ====================
+
+-- 1. BOOST SPEED & INFINITE NITRO
+AddBtn("BOOST & INF NITRO", function()
+    pcall(function()
+        local car = workspace:FindFirstChild(Player.Name.."'s Car") or workspace.Vehicles:FindFirstChild(Player.Name)
+        -- Speed & Torque
+        car.Drive.MaxSpeed.Value = 3000
+        car.Drive.Torque.Value = 15000
+        -- Infinite Nitro Logic
+        if car:FindFirstChild("Nitro") then
+            car.Nitro.Value = 999999
+            car.Nitro.MaxNitro.Value = 999999
+        end
     end)
 end)
 
--- === TABS ===
-local Main = Window:NewTab("Racing")
-local Sec = Main:NewSection("Car Mods")
-
-Sec:NewSlider("Top Speed", "GESER KE KANAN!", 2000, 100, function(s)
-    pcall(function()
-        local car = game.Workspace:FindFirstChild(game.Players.LocalPlayer.Name .. "'s Car") or game.Workspace.Vehicles:FindFirstChild(game.Players.LocalPlayer.Name)
-        if car then
-            car.Drive.MaxSpeed.Value = s
-        end
-    end)
+-- 2. NPC NOCLIP (Tembus Mobil Lain)
+local NoclipNPC = false
+AddBtn("GHOST NPC: OFF", function(self)
+    NoclipNPC = not NoclipNPC
+    script.Parent.Text = NoclipNPC and "GHOST NPC: ON" or "GHOST NPC: OFF"
 end)
 
-Sec:NewButton("Instant Stop", "Klik buat ngerem total", function()
+task.spawn(function()
+    while task.wait(0.1) do
+        if NoclipNPC then
+            pcall(function()
+                for i,v in pairs(workspace.Vehicles:GetChildren()) do
+                    if v.Name ~= Player.Name and v.Name ~= Player.Name.."'s Car" then
+                        for _, part in pairs(v:GetDescendants()) do
+                            if part:IsA("BasePart") then
+                                part.CanCollide = false
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- 3. AUTO DRIFT
+local FarmOn = false
+AddBtn("AUTO DRIFT", function() FarmOn = not FarmOn end)
+
+task.spawn(function()
+    while task.wait(0.1) do
+        if FarmOn then
+            pcall(function()
+                Player.Character.HumanoidRootPart.RotVelocity = Vector3.new(0, 50, 0)
+            end)
+        end
+    end
+end)
+
+AddBtn("INSTANT STOP", function()
     pcall(function()
-        local car = game.Workspace:FindFirstChild(game.Players.LocalPlayer.Name .. "'s Car")
+        local car = workspace:FindFirstChild(Player.Name.."'s Car")
         car.PrimaryPart.Velocity = Vector3.new(0,0,0)
     end)
 end)
