@@ -1,0 +1,49 @@
+-- [[ MIDNIGHT CHASER - KAVO ANDROID EDITION ]] --
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local Window = Library.CreateLib("MIDNIGHT CHASER 🏎️", "Midnight")
+
+-- === TAB RACING ===
+local Main = Window:NewTab("Racing")
+local MainSection = Main:NewSection("Performance Tweak")
+
+MainSection:NewSlider("Max Speed", "Atur kecepatan maksimal", 1500, 100, function(s)
+    -- Mencari mobil lu secara otomatis
+    for i,v in pairs(game.Workspace:GetChildren()) do
+        if v.Name:find(game.Players.LocalPlayer.Name) and v:FindFirstChild("Drive") then
+            v.Drive.MaxSpeed.Value = s
+        end
+    end
+end)
+
+MainSection:NewButton("Instant Stop", "Rem mendadak (No Skidding)", function()
+    local car = game.Workspace:FindFirstChild(game.Players.LocalPlayer.Name .. "'s Car")
+    if car and car:FindFirstChild("Drive") then
+        car.PrimaryPart.Velocity = Vector3.new(0,0,0)
+    end
+end)
+
+-- === TAB FARM ===
+local Farm = Window:NewTab("Farming")
+local FarmSection = Farm:NewSection("Auto Money")
+
+FarmSection:NewToggle("Drift Point Farm", "Auto rotasi buat poin", function(state)
+    _G.Drift = state
+    while _G.Drift do
+        task.wait(0.1)
+        pcall(function()
+            game.Players.LocalPlayer.Character.HumanoidRootPart.RotVelocity = Vector3.new(0, 45, 0)
+        end)
+    end
+end)
+
+-- === SETTINGS ===
+local Set = Window:NewTab("Settings")
+local SetSection = Set:NewSection("Menu Control")
+
+SetSection:NewKeybind("Toggle Menu", "Default: RightControl", Enum.KeyCode.RightControl, function()
+    Library:ToggleLib()
+end)
+
+SetSection:NewButton("Destroy GUI", "Hapus menu dari layar", function()
+    game:GetService("CoreGui"):FindFirstChild("Midnight"):Destroy()
+end)
